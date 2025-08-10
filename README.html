@@ -1,0 +1,61 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>README — Auscultation Lab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Inter; margin: 32px; color: #0b1220; }
+h1,h2,h3 { color: #0b1220; }
+code, pre { background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
+.kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; padding: 2px 6px; border-radius: 6px; background: #e5e7eb; }
+.note { background: #ecfeff; border: 1px solid #67e8f9; padding: 10px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>Auscultation Lab — Heart &amp; Lung Sounds (Prehospital)</h1>
+<p><strong>How to use</strong></p>
+<ol>
+  <li>Unzip the project and open <code>index.html</code> in a modern browser (Chrome, Edge, Safari).</li>
+  <li>Click <em>Install</em> in the footer to save as an offline app (PWA).</li>
+  <li>Use <em>Ambient noise</em> and <em>Siren</em> toggles to simulate the field.</li>
+</ol>
+<p class="note">Audio is <em>procedurally generated</em> in the browser to keep the app small and offline-ready. It approximates the characteristic patterns of common heart and lung sounds for recognition practice.</p>
+
+<h2>Add your own real recordings (optional)</h2>
+<p>This build synthesizes sounds. If you want clinical recordings:</p>
+<ol>
+  <li>Create a folder <code>custom</code> next to <code>index.html</code>.</li>
+  <li>Add <code>.mp3</code> or <code>.wav</code> files and a <code>custom.json</code> in the same folder with entries like:</li>
+</ol>
+
+<pre><code>[
+  {"id":"my_wheeze","name":"Real polyphonic wheeze","category":"lung","description":"Uploaded sample","file":"custom/wheeze_real.mp3","tags":["asthma","real"]},
+  {"id":"my_as","name":"Aortic stenosis (real)","category":"heart","description":"Clinic sample","file":"custom/as_real.mp3","tags":["systolic"]}
+]</code></pre>
+
+<p>Then add this line near the top of <code>app.js</code> after <code>SOUND_LIBRARY</code> is defined:</p>
+<pre><code>fetch('custom/custom.json').then(r=&gt;r.json()).then(list=&gt;{
+  list.forEach(item =&gt; SOUND_LIBRARY.push({
+    ...item,
+    builder: (ctx, rate=1) =&gt; playFile(ctx, item.file, rate)
+  }));
+  buildCards();
+});</code></pre>
+
+<p><strong>Note:</strong> To serve local files due to browser security policies, you may run a tiny web server:
+<code>python -m http.server 8000</code> in the project folder, then open <code>http://localhost:8000</code>.</p>
+
+<h2>Keyboard shortcuts</h2>
+<ul>
+  <li><span class="kbd">/</span> focus search</li>
+  <li><span class="kbd">H</span>/<span class="kbd">L</span> toggle heart/lung filters</li>
+  <li><span class="kbd">A</span> toggle ambient</li>
+  <li><span class="kbd">S</span> toggle siren</li>
+</ul>
+
+<h2>Disclaimer</h2>
+<p>Educational use only. Not a medical device. Always follow local protocols (e.g., 118 Piemonte) and clinical judgement.</p>
+</body>
+</html>

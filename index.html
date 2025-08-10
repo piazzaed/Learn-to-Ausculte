@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auscultation Lab — Heart & Lung Sounds (Prehospital)</title>
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preload" as="font" href="" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.9 7.2a.9.9 0 0 1 .2 1.26l-4.8 6.4a.9.9 0 0 1-1.34.08l-3-3a.9.9 0 1 1 1.28-1.28l2.26 2.26 4.18-5.58a.9.9 0 0 1 1.26-.14z"></path>
+      </svg>
+      <span>Auscultation Lab</span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab active" data-tab="learn" aria-selected="true">Learn</button>
+      <button class="tab" data-tab="practice" aria-selected="false">Practice</button>
+      <button class="tab" data-tab="tips" aria-selected="false">Tips</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Toolbar -->
+    <section class="toolbar" aria-label="Controls">
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Search sounds (e.g., wheeze, S3, crackles)…" aria-label="Search">
+      </div>
+
+      <div class="filters">
+        <label class="chip">
+          <input type="checkbox" id="filter-heart" checked>
+          <span>Heart</span>
+        </label>
+        <label class="chip">
+          <input type="checkbox" id="filter-lung" checked>
+          <span>Lung</span>
+        </label>
+
+        <div class="divider"></div>
+
+        <label class="chip">
+          <input type="checkbox" id="ambient-toggle">
+          <span>Ambient noise</span>
+        </label>
+        <label class="chip range">
+          <span>Level</span>
+          <input type="range" min="0" max="1" step="0.01" id="ambient-level" value="0.3">
+        </label>
+
+        <label class="chip">
+          <input type="checkbox" id="siren-toggle">
+          <span>Siren</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Learn tab -->
+    <section id="tab-learn" class="tab-panel active" role="tabpanel" aria-labelledby="learn">
+      <div id="cards" class="card-grid" aria-live="polite"></div>
+    </section>
+
+    <!-- Practice tab -->
+    <section id="tab-practice" class="tab-panel" role="tabpanel" aria-labelledby="practice">
+      <div class="practice">
+        <div class="practice-card">
+          <div class="practice-head">
+            <h2>Quick Quiz</h2>
+            <button id="practice-play" class="btn primary">Play sound</button>
+          </div>
+          <p id="practice-instructions">Listen and choose the best match.</p>
+          <div id="practice-choices" class="choices"></div>
+          <div id="practice-feedback" class="feedback" role="status" aria-live="polite"></div>
+        </div>
+        <div class="practice-options">
+          <label class="chip">
+            <input type="checkbox" id="practice-heart" checked><span>Heart</span>
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="practice-lung" checked><span>Lung</span>
+          </label>
+          <label class="chip range">
+            <span>Speed</span>
+            <input type="range" id="practice-rate" min="0.7" max="1.4" step="0.05" value="1">
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="practice-with-ambient"><span>With ambient</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tips tab -->
+    <section id="tab-tips" class="tab-panel" role="tabpanel" aria-labelledby="tips">
+      <article class="tips">
+        <h2>Prehospital Stethoscope Tips & Tricks</h2>
+
+        <details open>
+          <summary>Skin vs. over clothing</summary>
+          <ul>
+            <li>Prefer <strong>directly on skin</strong>. Thin T-shirt is acceptable for quick triage but attenuates high‑frequencies (wheezes, AR murmurs) and may add rustle noise.</li>
+            <li>Avoid fleece/jackets: they filter and create friction noise. If modesty/weather: lift garments locally.</li>
+            <li>Disinfect after every contact; keep spare alcohol wipes in the pocket clip.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Bell vs. diaphragm & hand position</summary>
+          <ul>
+            <li><strong>Diaphragm</strong>: high‑frequency (wheezes, AR, MR, friction rubs).</li>
+            <li><strong>Bell</strong>: low‑frequency (S3, S4, MS rumble). Apply lightly—pressing hard turns bell into a diaphragm.</li>
+            <li>Hold the chestpiece between index–middle fingers; avoid “palming” to reduce hand noise. Keep tubing off the rail/metal to prevent clatter.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Lung exam workflow</summary>
+          <ul>
+            <li>Compare <strong>side‑to‑side</strong> at each level: apices, mid‑zones, bases (posterior if possible).</li>
+            <li>Ask for <em>open‑mouth tidal breaths</em>. Avoid hyperventilation—may induce artifact wheeze or dizziness.</li>
+            <li><strong>Red flags</strong>: absent breath sounds on one side (tension PNX), diffuse crackles + hypoxia (cardiogenic edema), stridor (upper airway obstruction).</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Heart exam workflow</summary>
+          <ul>
+            <li>Sites: Aortic (R 2nd ICS), Pulmonic (L 2nd ICS), Tricuspid (LLSB), Mitral (apex). Left lateral decubitus brings out S3/S4/MS; leaning forward accentuates AR.</li>
+            <li>Assess rate, rhythm, S1–S2 quality, extra sounds (S3/S4), and murmurs (timing/shape/radiation).</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Intubation checks (prehospital)</summary>
+          <ul>
+            <li>Immediately after tube placement and ventilation: <strong>no gurgling in epigastrium</strong> (listen at the stomach), then confirm bilateral chest sounds, especially left (to rule out right mainstem).</li>
+            <li>Correlate with chest rise, ETCO₂ (capnography), and SpO₂ trend.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Dealing with noise</summary>
+          <ul>
+            <li>If safe, stop the vehicle/siren. Close doors/windows. Ask bystanders to pause talking.</li>
+            <li>Use short tubing, firm seal with the diaphragm, and anchor your elbows against your torso.</li>
+            <li>In this app, use <em>Ambient noise</em> and <em>Siren</em> toggles to practice recognition in realistic noise.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Limitations</summary>
+          <p>These are educational, <em>synthetic</em> representations to train recognition. Always correlate with the full clinical picture and local protocols.</p>
+        </details>
+      </article>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div>
+      <strong>Offline-ready.</strong> Add to Home Screen for quick access. Built for EMT/prehospital practice.
+    </div>
+    <div class="links">
+      <a href="#" id="install-btn" class="btn ghost" hidden>Install</a>
+      <a href="README.html" class="btn ghost">README</a>
+    </div>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
