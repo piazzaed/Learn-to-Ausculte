@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auscultation Lab — Single File v2 (Heart & Lung Sounds)</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+  <style>
+  :root {
+    --bg: #0b1220; --surface: rgba(255,255,255,0.06); --surface-2: rgba(255,255,255,0.08);
+    --text: #eaf2ff; --muted: #a7b4cc; --primary: #0ea5e9; --ring: rgba(14,165,233,0.6);
+    --radius: 14px; --shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  *{box-sizing:border-box} html,body{height:100%} body{margin:0;font:16px/1.5 -apple-system,system-ui,Segoe UI,Roboto,Inter;
+    color:var(--text); background: radial-gradient(1200px 800px at 20% -10%, #0b5b86 0%, transparent 60%),
+    radial-gradient(1200px 800px at 90% 20%, #35226b 0%, transparent 40%), var(--bg);}
+  .banner{position:sticky;top:0;z-index:6;display:flex;gap:8px;align-items:center;justify-content:space-between;
+    padding:10px 14px;background:rgba(14,165,233,0.14);border-bottom:1px solid rgba(14,165,233,0.35);backdrop-filter:blur(8px)}
+  .banner .btn{background:#0ea5e9;color:white;border:0;border-radius:12px;padding:8px 12px}
+  .banner small{opacity:.9}
+  .app-header{position:sticky;top:52px;z-index:5;display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;
+    padding:14px 18px; background:rgba(11,18,32,0.75); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,0.07)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+  .brand svg path{fill:#0ea5e9}
+  .tabs{display:flex;gap:6px}
+  .tab{appearance:none;border:0;background:var(--surface);color:var(--text);padding:10px 14px;border-radius:999px;cursor:pointer;
+    transition:transform .08s ease;background:var(--surface);box-shadow:var(--shadow)}
+  .tab.active{background:linear-gradient(180deg, rgba(14,165,233,0.3), rgba(14,165,233,0.15));outline:1px solid rgba(14,165,233,0.4)}
+  main{padding:18px;max-width:1200px;margin:0 auto}
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--surface);padding:12px;border-radius:var(--radius);box-shadow:var(--shadow)}
+  .search-wrap{flex:1 1 280px}
+  #search{width:100%;padding:12px 14px;border-radius:12px;background:var(--surface-2);border:1px solid rgba(255,255,255,0.1);color:var(--text);outline:none}
+  #search:focus{border-color:var(--ring);box-shadow:0 0 0 4px var(--ring)}
+  .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .divider{width:1px;height:28px;background:rgba(255,255,255,0.1);margin:0 8px}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:var(--surface-2)}
+  .chip input[type=checkbox]{width:18px;height:18px;accent-color:#0ea5e9}
+  .chip.range input[type=range]{width:160px}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-top:16px}
+  .card{display:grid;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+  .badge{font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.08);display:inline-block}
+  .title{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .btn{appearance:none;border:0;cursor:pointer;padding:10px 12px;border-radius:12px;background:var(--surface-2);color:var(--text);box-shadow:var(--shadow)}
+  .btn.primary{background:linear-gradient(180deg, rgba(14,165,233,0.35), rgba(14,165,233,0.15));outline:1px solid rgba(14,165,233,0.35)}
+  .meta{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+  .practice{display:grid;gap:14px;grid-template-columns:1.1fr 1fr}
+  .practice-card{background:var(--surface);padding:14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.08);box-shadow:var(--shadow)}
+  .choice{background:var(--surface-2);border:1px solid rgba(255,255,255,0.08);padding:10px;border-radius:12px;cursor:pointer}
+  .choice.correct{border-color:rgba(34,197,94,.8);box-shadow:0 0 0 3px rgba(34,197,94,.25)}
+  .choice.wrong{border-color:rgba(239,68,68,.9);box-shadow:0 0 0 3px rgba(239,68,68,.25)}
+  .tab-panel{display:none}.tab-panel.active{display:block}
+  #toast{position:fixed;bottom:16px;right:16px;z-index:50;padding:10px 12px;border-radius:10px;background:rgba(16,185,129,0.1);
+    border:1px solid rgba(16,185,129,0.3);color:#bbf7d0;box-shadow:var(--shadow);display:none}
+  @media(max-width:900px){.practice{grid-template-columns:1fr} .app-header{top:56px} }
+  </style>
+</head>
+<body>
+  <!-- iOS unlock banner -->
+  <div class="banner" id="unlock-bar">
+    <div>🔊 <strong>Audio locked on iOS</strong> — tap <em>Unlock audio</em> once, then use Test tone.</div>
+    <div>
+      <button class="btn" id="unlock-btn">Unlock audio</button>
+      <button class="btn" id="testtone-btn">Test tone</button>
+      <small id="unlock-status"></small>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.9 7.2a.9.9 0 0 1 .2 1.26l-4.8 6.4a.9.9 0 0 1-1.34.08l-3-3a.9.9 0 1 1 1.28-1.28l2.26 2.26 4.18-5.58a.9.9 0 0 1 1.26-.14z"></path>
+      </svg>
+      <span>Auscultation Lab</span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab active" data-tab="learn" aria-selected="true">Learn</button>
+      <button class="tab" data-tab="practice" aria-selected="false">Practice</button>
+      <button class="tab" data-tab="tips" aria-selected="false">Tips</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="toolbar" aria-label="Controls">
+      <div class="search-wrap"><input id="search" type="search" placeholder="Search sounds (e.g., wheeze, S3, crackles)…" aria-label="Search"></div>
+      <div class="filters">
+        <label class="chip"><input type="checkbox" id="filter-heart" checked><span>Heart</span></label>
+        <label class="chip"><input type="checkbox" id="filter-lung" checked><span>Lung</span></label>
+        <div class="divider"></div>
+        <label class="chip"><input type="checkbox" id="ambient-toggle"><span>Ambient noise</span></label>
+        <label class="chip range"><span>Level</span><input type="range" min="0" max="1" step="0.01" id="ambient-level" value="0.3"></label>
+        <label class="chip"><input type="checkbox" id="siren-toggle"><span>Siren</span></label>
+      </div>
+    </section>
+
+    <section id="tab-learn" class="tab-panel active" role="tabpanel" aria-labelledby="learn">
+      <div id="cards" class="card-grid" aria-live="polite"></div>
+    </section>
+
+    <section id="tab-practice" class="tab-panel" role="tabpanel" aria-labelledby="practice">
+      <div class="practice">
+        <div class="practice-card">
+          <div class="practice-head">
+            <h2>Quick Quiz</h2>
+            <button id="practice-play" class="btn primary">Play sound</button>
+          </div>
+          <p id="practice-instructions">Listen and choose the best match.</p>
+          <div id="practice-choices" class="choices"></div>
+          <div id="practice-feedback" class="feedback" role="status" aria-live="polite"></div>
+        </div>
+        <div class="practice-options">
+          <label class="chip"><input type="checkbox" id="practice-heart" checked><span>Heart</span></label>
+          <label class="chip"><input type="checkbox" id="practice-lung" checked><span>Lung</span></label>
+          <label class="chip range"><span>Speed</span><input type="range" id="practice-rate" min="0.7" max="1.4" step="0.05" value="1"></label>
+          <label class="chip"><input type="checkbox" id="practice-with-ambient"><span>With ambient</span></label>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-tips" class="tab-panel" role="tabpanel" aria-labelledby="tips">
+      <article class="tips">
+        <h2>Prehospital Stethoscope Tips & Tricks</h2>
+        <details open><summary>Skin vs. over clothing</summary>
+          <ul><li>Prefer <strong>directly on skin</strong>. Thin T-shirt is acceptable for quick triage but attenuates highs and adds rustle noise.</li>
+          <li>Avoid fleece/jackets; lift garments locally if needed.</li>
+          <li>Disinfect after each contact.</li></ul>
+        </details>
+        <details><summary>Bell vs. diaphragm & hand position</summary>
+          <ul><li><strong>Diaphragm</strong>: high-frequency (wheezes, AR/MR, friction rubs).</li>
+          <li><strong>Bell</strong>: low-frequency (S3/S4, MS rumble). Light pressure—pressing hard turns bell into diaphragm.</li>
+          <li>Hold between index–middle fingers; keep tubing off rails/metal.</li></ul>
+        </details>
+        <details><summary>Lung exam workflow</summary>
+          <ul><li>Compare side-to-side at apices, mid-zones, bases.</li><li>Open-mouth tidal breaths; avoid hyperventilation.</li><li><strong>Red flags</strong>: unilateral silence (tension PNX), diffuse crackles + hypoxia (edema), stridor (upper airway obstruction).</li></ul>
+        </details>
+        <details><summary>Heart exam workflow</summary>
+          <ul><li>Sites: Aortic, Pulmonic, Tricuspid, Mitral (apex).</li><li>Rate/rhythm, S1–S2, extra sounds, murmur timing/shape/radiation.</li></ul>
+        </details>
+        <details><summary>Intubation checks</summary>
+          <ul><li>No epigastric gurgling, then bilateral chest sounds (esp. left), plus chest rise, ETCO₂, SpO₂ trend.</li></ul>
+        </details>
+        <details><summary>Noise control</summary>
+          <ul><li>Stop vehicle if safe, close doors, ask for quiet.</li><li>Short tubing, firm seal, elbows anchored.</li></ul>
+        </details>
+      </article>
+    </section>
+  </main>
+
+  <footer class="app-footer" style="padding:14px 18px;opacity:.9">
+    <div><strong>Single-file v2.</strong> Open via Files → Share → <em>Open in Safari</em>. Use Unlock first.</div>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const state={ctx:null,master:null,ambient:null,siren:null,sounds:[],quiz:{}};
+function ensureAudio(){ if(!state.ctx){ const ctx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:44100}); const master=ctx.createGain(); master.gain.value=0.9; master.connect(ctx.destination); state.ctx=ctx; state.master=master; setupAmbient(); } return state.ctx; }
+function resumeAudio(){ ensureAudio(); return state.ctx.resume(); }
+function bandNoise(ctx,lo,hi,dur){ const n=Math.floor(dur*ctx.sampleRate); const buf=ctx.createBuffer(1,n,ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*0.6; const src=ctx.createBufferSource(); src.buffer=buf; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=(lo+hi)/2; bp.Q.value=bp.frequency.value/Math.max(1,(hi-lo)); src.connect(bp); return {src,node:bp}; }
+function pinkNoise(ctx){ const size=4096; const node=ctx.createScriptProcessor(size,1,1); let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0; node.onaudioprocess=e=>{ const out=e.outputBuffer.getChannelData(0); for(let i=0;i<size;i++){ const w=Math.random()*2-1; b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759; b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856; b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980; const pink=b0+b1+b2+b3+b4+b5+b6+w*0.5362; b6=w*0.115926; out[i]=pink*0.08; } }; return node; }
+function setupAmbient(){ const ctx=state.ctx; const g=ctx.createGain(); g.gain.value=0.0; g.connect(state.master); const pn=pinkNoise(ctx); const lp=ctx.createBiquadFilter(); lp.type='lowshelf'; lp.frequency.value=200; lp.gain.value=6; pn.connect(lp); lp.connect(g); const sir={osc:ctx.createOscillator(),gain:ctx.createGain(),on:false}; sir.osc.type='sine'; sir.gain.gain.value=0; sir.osc.connect(sir.gain); sir.gain.connect(state.master); sir.osc.start(); state.ambient=g; state.siren=sir; }
+function setAmbient(on,lvl){ if(!state.ambient) return; state.ambient.gain.setTargetAtTime(on?(lvl??0.3):0,state.ctx.currentTime,0.2); }
+function setSiren(on){ if(!state.siren) return; const {osc,gain}=state.siren; if(on){ gain.gain.setTargetAtTime(0.08,state.ctx.currentTime,0.2); let up=true; if(!state.siren.timer){ state.siren.timer=setInterval(()=>{ osc.frequency.setTargetAtTime(up?750:450,state.ctx.currentTime,0.25); up=!up; },800);} } else { gain.gain.setTargetAtTime(0,state.ctx.currentTime,0.2); if(state.siren.timer){ clearInterval(state.siren.timer); state.siren.timer=null; } } }
+function synthHeart(ctx,opts){ const rate=opts.rate??1; const bpm=72*rate; const cycle=60/bpm; const now=ctx.currentTime+0.05; const len=Math.min(8,6*cycle); const out=ctx.createGain(); out.gain.value=0.8; out.connect(state.master);
+  const thump=(t,p=60,d=0.1,g=0.9)=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=p; const gg=ctx.createGain(); gg.gain.value=0; o.connect(gg); gg.connect(out); gg.gain.setValueAtTime(0,t); gg.gain.exponentialRampToValueAtTime(g,t+0.01); gg.gain.exponentialRampToValueAtTime(0.0001,t+d); o.start(t); o.stop(t+d+0.02); };
+  const murmur=(t,d,lo,hi,level=0.4,shape='flat')=>{ const {src,node}=bandNoise(ctx,lo,hi,d); const g=ctx.createGain(); g.gain.value=0; node.connect(g); g.connect(out); if(shape==='cres-dec'){ const mid=t+d/2; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(level,mid); g.gain.linearRampToValueAtTime(0,t+d);} else if(shape==='decay'){ g.gain.setValueAtTime(level,t); g.gain.exponentialRampToValueAtTime(0.0001,t+d);} else { g.gain.setValueAtTime(level,t+0.02); g.gain.setValueAtTime(level,t+d-0.08); g.gain.linearRampToValueAtTime(0,t+d);} src.start(t); src.stop(t+d+0.02); };
+  for(let tt=0; tt<len; tt+=cycle){ const s1=now+tt; const s2=s1+0.35*cycle; thump(s1,60,0.11,0.95); thump(s2,90,0.09,0.75);
+    switch(opts.pattern){ case 's3': thump(s2+0.15*cycle,50,0.08,0.6); break; case 's4': thump(s1-0.12*cycle,55,0.07,0.55); break;
+      case 'as': murmur(s1+0.06*cycle,0.28*cycle,150,450,0.45,'cres-dec'); break; case 'mr': murmur(s1+0.05*cycle,0.35*cycle,200,800,0.38,'flat'); break;
+      case 'ar': murmur(s2+0.03*cycle,0.45*cycle,300,1200,0.35,'decay'); break; case 'ms': thump(s2+0.08*cycle,120,0.05,0.3); murmur(s2+0.1*cycle,0.5*cycle,40,120,0.5,'flat'); break;
+      case 'rub': for(let k=0;k<3;k++){ murmur(s1+k*0.12*cycle,0.09*cycle,400,1600,0.5,'flat'); } break; } }
+  setTimeout(()=>out.disconnect(), (len+0.5)*1000); return { stop:()=>out.disconnect() }; }
+function synthLung(ctx,opts){ const rate=opts.rate??1; const cycle=5.0/rate; const now=ctx.currentTime+0.05; const len=Math.min(10,4*cycle); const out=ctx.createGain(); out.gain.value=0.9; out.connect(state.master);
+  const breath=(start,insp=0.6*cycle,exp=0.4*cycle)=>{
+    if(['vesicular','bronchial','diminished'].includes(opts.type)){ const base=pinkNoise(ctx); const g=ctx.createGain(); g.gain.value=0; base.connect(g); g.connect(out);
+      const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value= opts.type==='bronchial'?800:300; bp.Q.value=0.8; base.disconnect(); base.connect(bp); bp.connect(g);
+      const level = opts.type==='diminished'?0.1:(opts.type==='bronchial'?0.5:0.35);
+      g.gain.setValueAtTime(0,start); g.gain.linearRampToValueAtTime(level,start+Math.min(0.3,insp*0.3)); g.gain.setValueAtTime(level,start+insp-0.06); g.gain.linearRampToValueAtTime(0.02,start+insp);
+      const eStart=start+insp+0.06; const eLevel=opts.type==='bronchial'?level*0.9:level*0.2; g.gain.linearRampToValueAtTime(eLevel,eStart+0.2); g.gain.linearRampToValueAtTime(0.0001,start+insp+exp);
+      setTimeout(()=>{ try{ base.disconnect(); }catch(e){} }, (start+insp+exp-ctx.currentTime+0.2)*1000);
+    }
+    if(opts.type==='wheeze'){ const tones=opts.tones==='mono'?[650]:[400,520,760,980].slice(0,3+Math.floor(Math.random()*2)); const dur=exp*0.85; const onset=start+0.65*insp;
+      tones.forEach(f=>{ const osc=ctx.createOscillator(); osc.type='sine'; osc.frequency.value=f; const g=ctx.createGain(); g.gain.value=0; osc.connect(g); g.connect(out); g.gain.setValueAtTime(0,onset); g.gain.linearRampToValueAtTime(0.35,onset+0.1); g.gain.linearRampToValueAtTime(0.02,onset+dur); osc.start(onset); osc.stop(onset+dur+0.1); });
+    }
+    if(opts.type==='crackles'){ const n=opts.flavor==='fine'?12:6; const startWin=[0.6*insp,0.85*insp]; for(let i=0;i<n;i++){ const t=start+(startWin[0]+Math.random()*(startWin[1]-startWin[0])); const click=ctx.createOscillator(); click.type='square'; click.frequency.value=1200+Math.random()*800; const g=ctx.createGain(); g.gain.value=0; click.connect(g); g.connect(out); const d=opts.flavor==='fine'?0.015:0.04; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.5,t+d*0.3); g.gain.linearRampToValueAtTime(0.0001,t+d); click.start(t); click.stop(t+d+0.01);} }
+    if(opts.type==='rhonchi'){ const f=180+Math.random()*80; const {src,node}=bandNoise(ctx,f-40,f+40,exp*0.9); const g=ctx.createGain(); g.gain.value=0; node.connect(g); g.connect(out); const t=start+insp+0.05; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.45,t+0.12); g.gain.linearRampToValueAtTime(0.0001,t+exp*0.9); src.start(t); src.stop(t+exp*0.9+0.05); }
+    if(opts.type==='stridor'){ const t=start; const dur=Math.min(1.2,insp*0.9); const osc=ctx.createOscillator(); osc.type='sawtooth'; osc.frequency.value=950; const g=ctx.createGain(); g.gain.value=0; osc.connect(g); g.connect(out); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.5,t+0.15); g.gain.linearRampToValueAtTime(0.02,t+dur); osc.start(t); osc.stop(t+dur+0.05); }
+    if(opts.type==='pleural_rub'){ for(let k=0;k<2;k++){ const t=start+k*(insp*0.6); const {src,node}=bandNoise(ctx,400,2000,0.3); const g=ctx.createGain(); g.gain.value=0; node.connect(g); g.connect(out); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.6,t+0.1); g.gain.linearRampToValueAtTime(0.02,t+0.3); src.start(t); src.stop(t+0.35);} }
+  };
+  for(let tt=0; tt<len; tt+=cycle){ breath(now+tt); }
+  setTimeout(()=>out.disconnect(), (len+0.5)*1000); return { stop:()=>out.disconnect() }; }
+function $(s){ return document.querySelector(s); }
+function create(el, attrs={}, children=[]){ const n=document.createElement(el); Object.entries(attrs).forEach(([k,v])=>{ if(k==='class') n.className=v; else if(k.startsWith('on')&&typeof v==='function') n.addEventListener(k.slice(2), v); else if(k==='html') n.innerHTML=v; else n.setAttribute(k,v); }); (Array.isArray(children)?children:[children]).forEach(ch=>ch&&n.appendChild(ch)); return n; }
+function toast(msg,ms=1600){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._timer); t._timer=setTimeout(()=>{ t.style.display='none'; }, ms); }
+const SOUND_LIBRARY=[
+  {id:'normal_s1s2',name:'Normal S1/S2',category:'heart',description:'Regular lub-dub with normal splitting; no murmurs.',builder:(c,r=1)=>synthHeart(c,{pattern:'normal',rate:r}),tags:['normal']},
+  {id:'s3',name:'S3 (ventricular gallop)',category:'heart',description:'Low-frequency extra sound after S2; HF or volume overload.',builder:(c,r=1)=>synthHeart(c,{pattern:'s3',rate:r}),tags:['low-frequency']},
+  {id:'s4',name:'S4 (atrial gallop)',category:'heart',description:'Low-frequency pre-S1 sound; stiff ventricle/ischemia.',builder:(c,r=1)=>synthHeart(c,{pattern:'s4',rate:r}),tags:['low-frequency']},
+  {id:'as_murmur',name:'Aortic stenosis',category:'heart',description:'Systolic crescendo-decrescendo ejection murmur.',builder:(c,r=1)=>synthHeart(c,{pattern:'as',rate:r}),tags:['systolic']},
+  {id:'mr_murmur',name:'Mitral regurgitation',category:'heart',description:'Holosystolic blowing murmur at apex.',builder:(c,r=1)=>synthHeart(c,{pattern:'mr',rate:r}),tags:['systolic']},
+  {id:'ar_murmur',name:'Aortic regurgitation',category:'heart',description:'Early diastolic decrescendo, high-frequency.',builder:(c,r=1)=>synthHeart(c,{pattern:'ar',rate:r}),tags:['diastolic']},
+  {id:'ms_rumble',name:'Mitral stenosis',category:'heart',description:'Low-pitched diastolic rumble; may follow opening snap.',builder:(c,r=1)=>synthHeart(c,{pattern:'ms',rate:r}),tags:['diastolic']},
+  {id:'pericardial_rub',name:'Pericardial friction rub',category:'heart',description:'Scratchy, triphasic rub independent of respiration.',builder:(c,r=1)=>synthHeart(c,{pattern:'rub',rate:r}),tags:['friction']},
+  {id:'vesicular',name:'Vesicular (normal)',category:'lung',description:'Soft inspiratory noise; minimal expiration.',builder:(c,r=1)=>synthLung(c,{type:'vesicular',rate:r}),tags:['normal']},
+  {id:'bronchial',name:'Bronchial breath sounds',category:'lung',description:'Louder, higher-pitched; insp = exp.',builder:(c,r=1)=>synthLung(c,{type:'bronchial',rate:r}),tags:['consolidation']},
+  {id:'wheeze_poly',name:'Polyphonic wheeze',category:'lung',description:'Multiple musical tones, mainly expiratory.',builder:(c,r=1)=>synthLung(c,{type:'wheeze',tones:'poly',rate:r}),tags:['expiratory']},
+  {id:'wheeze_mono',name:'Monophonic wheeze',category:'lung',description:'Single musical tone; focal obstruction.',builder:(c,r=1)=>synthLung(c,{type:'wheeze',tones:'mono',rate:r}),tags:['obstruction']},
+  {id:'crackles_fine',name:'Crackles (fine)',category:'lung',description:'Brief, high-frequency pops at bases.',builder:(c,r=1)=>synthLung(c,{type:'crackles',flavor:'fine',rate:r}),tags:['CHF']},
+  {id:'crackles_coarse',name:'Crackles (coarse)',category:'lung',description:'Lower-pitched, longer crackles.',builder:(c,r=1)=>synthLung(c,{type:'crackles',flavor:'coarse',rate:r}),tags:['pneumonia']},
+  {id:'rhonchi',name:'Rhonchi',category:'lung',description:'Low-pitched snoring/gurgling; clears with cough.',builder:(c,r=1)=>synthLung(c,{type:'rhonchi',rate:r}),tags:['secretions']},
+  {id:'stridor',name:'Stridor',category:'lung',description:'High-pitched inspiratory sound.',builder:(c,r=1)=>synthLung(c,{type:'stridor',rate:r}),tags:['emergency']},
+  {id:'pleural_rub',name:'Pleural friction rub',category:'lung',description:'Grating, sandpaper-like both in/exp.',builder:(c,r=1)=>synthLung(c,{type:'pleural_rub',rate:r}),tags:['pleurisy']},
+  {id:'diminished',name:'Diminished/absent (one side)',category:'lung',description:'Markedly quiet on one side.',builder:(c,r=1)=>synthLung(c,{type:'diminished',rate:r}),tags:['pneumothorax']},
+];
+function buildCards(){ const grid=$('#cards'); grid.innerHTML=''; const q=($('#search').value||'').trim().toLowerCase(); const showHeart=$('#filter-heart').checked; const showLung=$('#filter-lung').checked;
+  state.sounds=SOUND_LIBRARY.filter(s=> (s.category==='heart'&&showHeart)||(s.category==='lung'&&showLung))
+    .filter(s=> !q || s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.tags.join(' ').toLowerCase().includes(q) );
+  state.sounds.forEach(s=>{ const card=document.createElement('article'); card.className='card';
+    const badge=`<span class="badge">${s.category.toUpperCase()}</span>`;
+    card.innerHTML=`<div class="title"><h3>${s.name}</h3>${badge}</div><p>${s.description}</p>`;
+    const row=document.createElement('div'); row.className='row';
+    const btn=document.createElement('button'); btn.className='btn primary'; btn.textContent='Play'; btn.addEventListener('click',()=>playSound(s.id));
+    const amb=document.createElement('button'); amb.className='btn'; amb.textContent='▶ with ambient'; amb.addEventListener('click',()=>{ toggleAmbient(true); playSound(s.id); });
+    const meta=document.createElement('span'); meta.className='meta'; meta.textContent=s.tags.map(t=>"#"+t).join(' ');
+    row.append(btn,amb,meta); card.appendChild(row); grid.appendChild(card);
+  });
+  if(!state.sounds.length){ const d=document.createElement('div'); d.className='meta'; d.textContent='No matches. Try different filters or terms.'; grid.appendChild(d); }
+}
+function playSound(id, rate=1){ ensureAudio(); state.ctx.resume(); const spec=SOUND_LIBRARY.find(s=>s.id===id); if(!spec) return; spec.builder(state.ctx, rate); }
+function toggleAmbient(on){ ensureAudio(); const lvl=parseFloat($('#ambient-level').value||'0.3'); setAmbient(on ?? $('#ambient-toggle').checked, lvl); }
+function toggleSiren(on){ ensureAudio(); setSiren(on ?? $('#siren-toggle').checked); }
+function pickQuiz(){ const pool=SOUND_LIBRARY.filter(s=> ((s.category==='heart'&&$('#practice-heart').checked) || (s.category==='lung'&&$('#practice-lung').checked)) ); if(pool.length<2) return null; const answer=pool[Math.floor(Math.random()*pool.length)]; const distractors=pool.filter(s=>s.id!==answer.id).sort(()=>Math.random()-0.5).slice(0,3); const choices=[...distractors, answer].sort(()=>Math.random()-0.5); return {answer,choices}; }
+function renderPractice(){ const area=$('#practice-choices'); area.innerHTML=''; const q=pickQuiz(); if(!q){ $('#practice-instructions').textContent='Choose at least two categories.'; return; } state.quiz.current=q; $('#practice-instructions').textContent='Listen and pick the correct sound.';
+  q.choices.forEach(c=>{ const btn=document.createElement('button'); btn.className='choice'; btn.innerHTML=`${c.name} <span class="meta">(${c.category})</span>`; btn.addEventListener('click',()=>{ if(c.id===q.answer.id){ btn.classList.add('correct'); $('#practice-feedback').textContent='✅ Correct!'; } else { btn.classList.add('wrong'); $('#practice-feedback').textContent='❌ Not quite. Answer: '+q.answer.name; } setTimeout(renderPractice,1100); }); area.appendChild(btn); });
+}
+function playPractice(){ ensureAudio(); state.ctx.resume(); if(!state.quiz.current) renderPractice(); const rate=parseFloat($('#practice-rate').value||'1'); if($('#practice-with-ambient').checked) toggleAmbient(true); const ans=state.quiz.current?.answer; if(ans) ans.builder(state.ctx, rate); }
+function switchTab(which){ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===which)); document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+which)); }
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+  ['search','filter-heart','filter-lung'].forEach(id=>document.getElementById(id).addEventListener('input', buildCards));
+  document.getElementById('ambient-toggle').addEventListener('change',()=>toggleAmbient());
+  document.getElementById('ambient-level').addEventListener('input',()=>toggleAmbient());
+  document.getElementById('siren-toggle').addEventListener('change',()=>toggleSiren());
+  document.getElementById('practice-play').addEventListener('click', playPractice);
+  ['practice-heart','practice-lung'].forEach(id=>document.getElementById(id).addEventListener('change', renderPractice));
+  document.getElementById('practice-rate').addEventListener('input',()=>{ document.getElementById('practice-rate').title='Rate: '+document.getElementById('practice-rate').value+'x'; });
+  buildCards(); renderPractice();
+  // Unlock controls
+  const status=$('#unlock-status');
+  document.getElementById('unlock-btn').addEventListener('click', async ()=>{
+    try { await resumeAudio(); status.textContent='✓ Unlocked'; status.style.color='#22c55e'; toast('Audio unlocked'); }
+    catch(e){ status.textContent='Audio unlock failed'; status.style.color='#ef4444'; alert('Could not unlock audio: '+e.message); }
+  });
+  document.getElementById('testtone-btn').addEventListener('click', async ()=>{
+    try { await resumeAudio(); const ctx=ensureAudio(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.value=880; g.gain.value=0.0001; o.connect(g); g.connect(state.master); const t=ctx.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.3,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.25); o.start(t); o.stop(t+0.3); } catch(e){ alert('Test tone failed: '+e.message); }
+  });
+});
+window.addEventListener('keydown',e=>{ if(e.key==='/'){ e.preventDefault(); document.getElementById('search').focus(); } if(e.key.toLowerCase()==='h'){ const c=document.getElementById('filter-heart'); c.checked=!c.checked; buildCards(); } if(e.key.toLowerCase()==='l'){ const c=document.getElementById('filter-lung'); c.checked=!c.checked; buildCards(); } if(e.key.toLowerCase()==='a'){ const c=document.getElementById('ambient-toggle'); c.checked=!c.checked; toggleAmbient(); } if(e.key.toLowerCase()==='s'){ const c=document.getElementById('siren-toggle'); c.checked=!c.checked; toggleSiren(); } });
+</script>
+</body>
+</html>
